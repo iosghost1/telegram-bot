@@ -10,7 +10,7 @@ valid_codes = set()
 # ===== WEBSITE =====
 @app.route('/')
 def home():
-    return "Server is running"
+    return "Server is running ✅"
 
 @app.route('/verify')
 def verify():
@@ -21,6 +21,9 @@ def verify():
     return jsonify({'valid': False})
 
 # ===== TELEGRAM =====
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot is ON 🔥")
+
 async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     new_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     valid_codes.add(new_code)
@@ -29,12 +32,15 @@ async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def run_bot():
     TOKEN = os.getenv("BOT_TOKEN")
     app_bot = ApplicationBuilder().token(TOKEN).build()
+
+    app_bot.add_handler(CommandHandler("start", start))
     app_bot.add_handler(CommandHandler("code", code))
+
     app_bot.run_polling()
 
 # ===== START =====
 if __name__ == "__main__":
     threading.Thread(target=run_bot).start()
 
-    port = int(os.environ.get("PORT", 3000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)

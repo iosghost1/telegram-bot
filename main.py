@@ -5,29 +5,36 @@ import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Ky aktivizon loget që të shohim çfarë ndodh te Render
+# Aktivizojmë loget
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Kjo do shfaqet te Logs kur dikush shkruan /code
-    print("Komanda /code u mor!") 
     new_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     await update.message.reply_text(f"Your code is: {new_code} 🔑")
 
-TOKEN = os.environ.get("BOT_TOKEN")
-URL = "https://onrender.com"
-PORT = int(os.environ.get("PORT", 10000))
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    logger.error(f"Gabim: {context.error}")
 
 def main():
+    TOKEN = os.environ.get("BOT_TOKEN")
+    URL = "https://onrender.com"
+    PORT = int(os.environ.get("PORT", 10000))
+
+    # Ndërtimi i aplikacionit
     application = ApplicationBuilder().token(TOKEN).build()
     application.add_handler(CommandHandler("code", code))
+    application.add_error_handler(error_handler)
 
-    # Kjo duhet të jetë fiks kështu
+    # Ky rresht është KRITIK për Render
+    logger.info(f"Boti po niset në portin {PORT}")
+    
     application.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         url_path=TOKEN,
-        webhook_url=f"{URL}/{TOKEN}"
+        webhook_url=f"{URL}/{TOKEN}",
+        drop_pending_updates=True
     )
 
 if __name__ == "__main__":

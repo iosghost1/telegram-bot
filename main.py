@@ -6,10 +6,8 @@ from flask import Flask, request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Flask app
 app = Flask(__name__)
 
-# store valid codes
 valid_codes = set()
 
 # command /code
@@ -18,15 +16,13 @@ async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     valid_codes.add(new_code)
     await update.message.reply_text(f"Your code is: {new_code} 🔑")
 
-# ENV
 TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-# Telegram bot
 bot_app = ApplicationBuilder().token(TOKEN).build()
 bot_app.add_handler(CommandHandler("code", code))
 
-# webhook endpoint (Telegram calls this)
+# webhook route
 @app.route(f"/{TOKEN}", methods=["POST"])
 async def webhook():
     update = Update.de_json(request.get_json(force=True), bot_app.bot)
@@ -38,7 +34,7 @@ async def webhook():
 def home():
     return "Server is running ✅"
 
-# start everything
+# START
 async def main():
     await bot_app.initialize()
     await bot_app.bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")

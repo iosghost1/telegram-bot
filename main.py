@@ -36,6 +36,14 @@ def main():
         webhook_url=f"{URL}/{TOKEN}",
         drop_pending_updates=True
     )
-
 if __name__ == "__main__":
-    main()
+    application = ApplicationBuilder().token(TOKEN).build()
+    application.add_handler(CommandHandler("code", code))
+
+    # Kjo metodë e thjeshtuar shmang gabimet e rrugës (path)
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        webhook_url=f"{URL}/{TOKEN}"
+    )
+

@@ -1,6 +1,7 @@
 import os
 import random
 import string
+import asyncio
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -25,7 +26,7 @@ bot_app.add_handler(CommandHandler("code", code))
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot_app.bot)
-    bot_app.process_update(update)
+    asyncio.run(bot_app.process_update(update))  # FIX
     return "ok"
 
 # test route
@@ -35,11 +36,11 @@ def home():
 
 # START
 if __name__ == "__main__":
-    import asyncio
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(bot_app.initialize())
-    loop.run_until_complete(
-        bot_app.bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
-    )
+
+    async def main():
+        await bot_app.initialize()
+        await bot_app.bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
+
+    asyncio.run(main())  # FIX (pa get_event_loop)
 
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))

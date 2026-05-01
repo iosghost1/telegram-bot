@@ -19,15 +19,22 @@ async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
 TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
+# Kontrollo që URL-ja nuk ka "/" në fund
+if WEBHOOK_URL and WEBHOOK_URL.endswith("/"):
+    WEBHOOK_URL = WEBHOOK_URL[:-1]
+
 bot_app = ApplicationBuilder().token(TOKEN).build()
 bot_app.add_handler(CommandHandler("code", code))
 
 # webhook route
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), bot_app.bot)
-    asyncio.run(bot_app.process_update(update))  # FIX
-    return "ok"
+    if request.method == "POST":
+        update = Update.de_json(request.get_json(force=True), bot_app.bot)
+        # Përdor loop-in ekzistues për procesimin
+        asyncio.run_coroutine_threadsafe(bot_app.process_update(update), loop)
+        return "ok"
+    return "error"
 
 # test route
 @app.route("/")
@@ -36,11 +43,18 @@ def home():
 
 # START
 if __name__ == "__main__":
+    # Krijojmë një loop global për asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
-    async def main():
+    async def setup_webhook():
         await bot_app.initialize()
-        await bot_app.bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
+        # Vendosja e webhook
+        success = await bot_app.bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
+        print(f"Webhook set status: {success}")
 
-    asyncio.run(main())  # FIX (pa get_event_loop)
+    loop.run_until_complete(setup_webhook())
 
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    # Nisim Flask
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)

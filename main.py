@@ -2,31 +2,32 @@ import os
 import random
 import string
 import logging
+from flask import Flask
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Loget për të parë gabimet
+# Loget
 logging.basicConfig(level=logging.INFO)
+
+app = Flask(__name__)
 
 async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     new_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     await update.message.reply_text(f"Your code is: {new_code} 🔑")
 
+@app.route('/')
+def home():
+    return "Bot is Alive!", 200
+
 def main():
-    # Merr variablat nga Render
     TOKEN = os.environ.get("BOT_TOKEN")
     URL = "https://onrender.com"
     PORT = int(os.environ.get("PORT", 10000))
 
-    if not TOKEN:
-        print("GABIM: BOT_TOKEN nuk eshte vendosur ne Render!")
-        return
-
-    # Ndertimi i aplikacionit
     application = ApplicationBuilder().token(TOKEN).build()
     application.add_handler(CommandHandler("code", code))
 
-    # Nisja e Webhook
+    # Ky rresht e mban botin ndezur dhe i pergjigjet Render-it
     application.run_webhook(
         listen="0.0.0.0",
         port=PORT,

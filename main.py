@@ -1,8 +1,13 @@
 import os
 import random
 import string
+import asyncio
+from flask import Flask, request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+# Flask app
+app = Flask(__name__)
 
 # store valid codes
 valid_codes = set()
@@ -13,10 +18,31 @@ async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     valid_codes.add(new_code)
     await update.message.reply_text(f"Your code is: {new_code} 🔑")
 
+# ENV
 TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(CommandHandler("code", code))
+# Telegram bot
+bot_app = ApplicationBuilder().token(TOKEN).build()
+bot_app.add_handler(CommandHandler("code", code))
+
+# webhook endpoint (Telegram calls this)
+@app.route(f"/{TOKEN}", methods=["POST"])
+async def webhook():
+    update = Update.de_json(request.get_json(force=True), bot_app.bot)
+    await bot_app.process_update(update)
+    return "ok"
+
+# test route
+@app.route("/")
+def home():
+    return "Server is running ✅"
+
+# start everything
+async def main():
+    await bot_app.initialize()
+    await bot_app.bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
 
 if __name__ == "__main__":
-    app.run_polling()
+    asyncio.run(main())
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))

@@ -10,7 +10,6 @@ app = Flask(__name__)
 
 valid_codes = set()
 
-# command /code
 async def code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     new_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     valid_codes.add(new_code)
@@ -22,23 +21,21 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 bot_app = ApplicationBuilder().token(TOKEN).build()
 bot_app.add_handler(CommandHandler("code", code))
 
-# webhook route
 @app.route(f"/{TOKEN}", methods=["POST"])
 async def webhook():
     update = Update.de_json(request.get_json(force=True), bot_app.bot)
     await bot_app.process_update(update)
     return "ok"
 
-# test route
 @app.route("/")
 def home():
     return "Server is running ✅"
 
-# START
-async def main():
-    await bot_app.initialize()
-    await bot_app.bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(bot_app.initialize())
+    loop.run_until_complete(
+        bot_app.bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
+    )
+
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
